@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const unlockKey = `${playerId}_c${character.id}_unlock`;
                     const skinKey = `${playerId}_c${character.id}_skin${skin.index}`;
 
-                    if (unlockedSkins[unlockKey] === 'true' && unlockedSkins[skinKey] === 1) {
+                    if (unlockedSkins[unlockKey] && unlockedSkins[unlockKey].toLowerCase() === 'true' && unlockedSkins[skinKey] === 1) {
                         skinElement.classList.add('unlocked');
                     }
 
