@@ -148,6 +148,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateButton.addEventListener('click', () => {
         let xmlData = xmlInput.value;
+        if (!playerId) {
+            processButton.click();
+        }
         console.log(`${playerId}_gems`);
         const gemsKey = `${playerId}_gems`;
         const gemsValue = gemsInput.value;
