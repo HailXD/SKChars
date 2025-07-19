@@ -1,8 +1,5 @@
-import re
-from bs4 import BeautifulSoup
 import requests
 import pandas as pd
-import pickle as pkl
 import os
 
 website = requests.get('https://soul-knight.fandom.com/wiki/Characters').text
@@ -32,6 +29,7 @@ df['ID'] = df['ID'].astype(int)
 df = df[df['ID'] < 100]
 
 os.makedirs('Characters', exist_ok=True)
+results = {}
 for char_i, row in enumerate(df.itertuples()):
     url = base + row.URL
     char = row.Character
@@ -66,5 +64,17 @@ for char_i, row in enumerate(df.itertuples()):
         .tolist()
     )
 
-    total = [char_i, list(zip(range(len(names)), names, urls))]
-    print(total)
+    results[char] = {
+        "id": row.ID,
+        "skins": [
+            {
+                "name": name,
+                "url": url,
+                "index": index
+            } for index, name, url in list(zip(range(len(names)), names, urls))
+        ]
+    }
+
+with open('characters.json', 'w', encoding='utf-8') as f:
+    import json
+    json.dump(results, f, ensure_ascii=False)
