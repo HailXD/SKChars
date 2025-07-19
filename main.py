@@ -32,7 +32,7 @@ df['ID'] = df['ID'].astype(int)
 df = df[df['ID'] < 100]
 
 os.makedirs('Characters', exist_ok=True)
-for row in df.itertuples():
+for char_i, row in enumerate(df.itertuples()):
     url = base + row.URL
     char = row.Character
 
@@ -66,5 +66,5 @@ for row in df.itertuples():
         .tolist()
     )
 
-    total = list(zip(names, urls))
+    total = [char_i, list(zip(range(len(names)), names, urls))]
     print(total)
