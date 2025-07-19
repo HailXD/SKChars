@@ -153,11 +153,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         console.log(`${playerId}_gems`);
         const gemsKey = `${playerId}_gems`;
+        const lastGemsKey = `${playerId}_last_gems`
         const gemsValue = gemsInput.value;
         if (gemsValue) {
             const gemsRegex = new RegExp(`<key>${gemsKey}<\\/key>\\s*<integer>\\d+<\\/integer>`);
             if (xmlData.match(gemsRegex)) {
                 xmlData = xmlData.replace(gemsRegex, `<key>${gemsKey}</key><integer>${gemsValue}</integer>`);
+                xmlData = xmlData.replace(lastGemsKey, `<key>${lastGemsKey}</key><integer>${gemsValue}</integer>`);
             } else {
                 xmlData = xmlData.replace('</dict>', `<key>${gemsKey}</key><integer>${gemsValue}</integer></dict>`);
             }
