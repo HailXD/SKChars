@@ -59,8 +59,7 @@ for char_i, row in enumerate(df.itertuples()):
         df['Sort by cost']
         .dropna()
         .apply(lambda x: x[1] if isinstance(x, tuple) else None)
-        .str.split('?', n=1)
-        .str[0]
+        .str.replace('/revision/latest', '', regex=False)
         .tolist()
     )
 
