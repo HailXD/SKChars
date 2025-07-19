@@ -55,4 +55,14 @@ for row in df.itertuples():
         .tolist()
     )
 
-    print(names)
+    urls = (
+        df['Sort by cost']
+        .dropna()
+        .apply(lambda x: x[1] if isinstance(x, tuple) else None)
+        .str.split('?', n=1)
+        .str[0]
+        .tolist()
+    )
+
+    total = list(zip(names, urls))
+    print(total)
