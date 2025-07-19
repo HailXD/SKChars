@@ -1,7 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
     const charactersContainer = document.getElementById('characters-container');
     const searchBar = document.getElementById('search-bar');
+    const hailContainer = document.getElementById('hail-container');
+    const xmlInput = document.getElementById('xml-input');
+    const processButton = document.getElementById('process-button');
+    const codeOutput = document.getElementById('code-output');
     let charactersData = {};
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('hail')) {
+        hailContainer.style.display = 'block';
+    }
 
     fetch('characters.json')
         .then(response => response.json())
@@ -83,5 +92,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         renderCharacters(filteredData);
+    });
+
+    processButton.addEventListener('click', () => {
+        const xmlData = xmlInput.value;
+        const keyRegex = /<key>([^<]+)<\/key>/g;
+        let match;
+        let output = '';
+        while ((match = keyRegex.exec(xmlData)) !== null) {
+            const key = match[1];
+            if (key.includes('c0') && !key.toLowerCase().includes('local')) {
+                const segments = key.split('_');
+                output += segments[0] + '\n';
+            }
+        }
+        codeOutput.textContent = output;
     });
 });
