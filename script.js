@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateButton = document.getElementById('update-button');
     const gemsInput = document.getElementById('gems-input');
     const codeOutput = document.getElementById('code-output');
+    const copyButton = document.getElementById('copy-button');
     let charactersData = {};
     let playerId = '';
     let unlockedSkins = {};
@@ -147,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateButton.addEventListener('click', () => {
         let xmlData = xmlInput.value;
+        console.log(`${playerId}_gems`);
         const gemsKey = `${playerId}_gems`;
         const gemsValue = gemsInput.value;
         if (gemsValue) {
@@ -179,4 +181,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         codeOutput.textContent = xmlData.replace(/>\s+</g, '><').trim();
     });
+
+    copyButton.addEventListener('click', () => {
+       const selection = window.getSelection();
+       const range = document.createRange();
+       range.selectNodeContents(codeOutput);
+       selection.removeAllRanges();
+       selection.addRange(range);
+       
+       copyButton.textContent = 'Copied!';
+       setTimeout(() => {
+           copyButton.textContent = 'Copy';
+       }, 1500);
+   });
 });
