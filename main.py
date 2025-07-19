@@ -5,12 +5,13 @@ import pandas as pd
 import pickle as pkl
 import os
 
-# website = requests.get('https://soul-knight.fandom.com/wiki/Characters').text
+website = requests.get('https://soul-knight.fandom.com/wiki/Characters').text
 # with open('characters.html', 'w', encoding='utf-8') as f:
 #     f.write(website)
 
 base = "https://soul-knight.fandom.com"
-tables = pd.read_html("characters.html", extract_links="all")
+# tables = pd.read_html("characters.html", extract_links="all")
+tables = pd.read_html(website, extract_links="all")
 df = tables[1]
 
 def _pretty(col):
@@ -35,10 +36,10 @@ for row in df.itertuples():
     url = base + row.URL
     char = row.Character
 
-    # r = requests.get(url)
+    r = requests.get(url)
     # with open('Characters/' + char + '.html', 'w', encoding='utf-8') as f:
     #     f.write(r.text)
-    tables = pd.read_html('Characters/' + char + '.html', extract_links="body")
+    # tables = pd.read_html('Characters/' + char + '.html', extract_links="body")
     try:
         df = tables[3]
         df.columns = df.columns.get_level_values(1) 
