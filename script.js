@@ -4,8 +4,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const hailContainer = document.getElementById('hail-container');
     const xmlInput = document.getElementById('xml-input');
     const processButton = document.getElementById('process-button');
+    const updateButton = document.getElementById('update-button');
+    const gemsInput = document.getElementById('gems-input');
     const codeOutput = document.getElementById('code-output');
     let charactersData = {};
+    let playerId = '';
+    let unlockedSkins = {};
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('hail')) {
@@ -48,6 +52,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 character.skins.forEach(skin => {
                     const skinElement = document.createElement('div');
                     skinElement.classList.add('skin');
+                    const unlockKey = `${playerId}_c${character.id}_unlock`;
+                    const skinKey = `${playerId}_c${character.id}_skin${skin.index}`;
+
+                    if (unlockedSkins[unlockKey] === 'true' && unlockedSkins[skinKey] === 1) {
+                        skinElement.classList.add('unlocked');
+                    }
+
+                    skinElement.addEventListener('click', () => {
+                        skinElement.classList.toggle('unlocked');
+                        if (skinElement.classList.contains('unlocked')) {
+                            unlockedSkins[unlockKey] = 'true';
+                            unlockedSkins[skinKey] = 1;
+                        } else {
+                            unlockedSkins[skinKey] = 0;
+                            const characterSkins = Object.keys(unlockedSkins).filter(k => k.startsWith(`${playerId}_c${character.id}_skin`));
+                            const isAnySkinUnlocked = characterSkins.some(k => unlockedSkins[k] === 1);
+                            if (!isAnySkinUnlocked) {
+                                unlockedSkins[unlockKey] = 'false';
+                            }
+                        }
+                    });
 
                     const skinGif = document.createElement('img');
                     skinGif.classList.add('skin-gif');
@@ -96,16 +121,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
     processButton.addEventListener('click', () => {
         const xmlData = xmlInput.value;
-        const keyRegex = /<key>([^<]+)<\/key>/g;
-        let match;
-        let output = '';
-        while ((match = keyRegex.exec(xmlData)) !== null) {
-            const key = match[1];
-            if (key.includes('c0') && !key.toLowerCase().includes('local')) {
-                const segments = key.split('_');
-                output += segments[0] + '\n';
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlData, "application/xml");
+        const keys = xmlDoc.getElementsByTagName('key');
+        unlockedSkins = {};
+
+        for (let i = 0; i < keys.length; i++) {
+            const key = keys[i].textContent;
+            if (!playerId && key.includes('_c0') && !key.toLowerCase().includes('local')) {
+                playerId = key.split('_')[0];
+            }
+            if (key.startsWith(playerId)) {
+                const valueNode = keys[i].nextElementSibling;
+                if (valueNode && valueNode.tagName === 'integer') {
+                    unlockedSkins[key] = parseInt(valueNode.textContent, 10);
+                }
+                 else if (valueNode && valueNode.tagName === 'string') {
+                    unlockedSkins[key] = valueNode.textContent;
+                }
             }
         }
-        codeOutput.textContent = output;
+        renderCharacters(charactersData);
+    });
+
+    updateButton.addEventListener('click', () => {
+        let xmlData = xmlInput.value;
+        const gemsKey = `${playerId}_gems`;
+        const gemsValue = gemsInput.value;
+        if (gemsValue) {
+            const gemsRegex = new RegExp(`<key>${gemsKey}<\\/key>\\s*<integer>\\d+<\\/integer>`);
+            if (xmlData.match(gemsRegex)) {
+                xmlData = xmlData.replace(gemsRegex, `<key>${gemsKey}</key><integer>${gemsValue}</integer>`);
+            } else {
+                xmlData = xmlData.replace('</dict>', `<key>${gemsKey}</key><integer>${gemsValue}</integer></dict>`);
+            }
+        }
+
+        for (const key in unlockedSkins) {
+            if (unlockedSkins.hasOwnProperty(key)) {
+                const value = unlockedSkins[key];
+                const keyRegex = new RegExp(`<key>${key}<\\/key>\\s*<(integer|string)>[^<]+<\\/\\1>`);
+                let replacement = `<key>${key}</key>`;
+                if (typeof value === 'number') {
+                    replacement += `<integer>${value}</integer>`;
+                } else {
+                    replacement += `<string>${value}</string>`;
+                }
+
+                if (xmlData.match(keyRegex)) {
+                    xmlData = xmlData.replace(keyRegex, replacement);
+                } else {
+                     xmlData = xmlData.replace('</dict>', `${replacement}</dict>`);
+                }
+            }
+        }
+
+        codeOutput.textContent = xmlData.replace(/>\s+</g, '><').trim();
     });
 });
