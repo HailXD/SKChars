@@ -120,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     processButton.addEventListener('click', () => {
+        playerId = '';
         const xmlData = xmlInput.value;
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlData, "application/xml");
@@ -158,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         for (const key in unlockedSkins) {
-            if (unlockedSkins.hasOwnProperty(key)) {
+            if (unlockedSkins.hasOwnProperty(key) && !key.endsWith('_gems')) {
                 const value = unlockedSkins[key];
                 const keyRegex = new RegExp(`<key>${key}<\\/key>\\s*<(integer|string)>[^<]+<\\/\\1>`);
                 let replacement = `<key>${key}</key>`;
