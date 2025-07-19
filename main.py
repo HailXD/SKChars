@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import requests
 import pandas as pd
 import pickle as pkl
+import os
 
 # website = requests.get('https://soul-knight.fandom.com/wiki/Characters').text
 # with open('characters.html', 'w', encoding='utf-8') as f:
@@ -29,4 +30,27 @@ df['ID'] = df['ID'].replace('', '0')
 df['ID'] = df['ID'].astype(int)
 df = df[df['ID'] < 100]
 
-print(df)
+os.makedirs('Characters', exist_ok=True)
+for row in df.itertuples():
+    url = base + row.URL
+    char = row.Character
+
+    # r = requests.get(url)
+    # with open('Characters/' + char + '.html', 'w', encoding='utf-8') as f:
+    #     f.write(r.text)
+    tables = pd.read_html('Characters/' + char + '.html')
+    df = tables[3]
+    try:
+        df.columns = df.columns.get_level_values(1) 
+    except Exception:
+        df = tables[4]
+        df.columns = df.columns.get_level_values(1)
+    names = (
+        df["Sort by name"]
+        .dropna()                       # skip the NaNs in that column
+        .str.split(" - ", n=1)          # split only once
+        .str[0]                         # take the bit before the dash
+        .tolist()                       # turn into a regular Python list
+    )
+
+    print(names)
