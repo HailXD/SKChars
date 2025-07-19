@@ -39,12 +39,13 @@ for row in df.itertuples():
     # with open('Characters/' + char + '.html', 'w', encoding='utf-8') as f:
     #     f.write(r.text)
     tables = pd.read_html('Characters/' + char + '.html')
-    df = tables[3]
     try:
+        df = tables[3]
         df.columns = df.columns.get_level_values(1) 
     except Exception:
         df = tables[4]
         df.columns = df.columns.get_level_values(1)
+
     names = (
         df["Sort by name"]
         .dropna()                       # skip the NaNs in that column
