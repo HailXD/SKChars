@@ -38,7 +38,7 @@ for row in df.itertuples():
     # r = requests.get(url)
     # with open('Characters/' + char + '.html', 'w', encoding='utf-8') as f:
     #     f.write(r.text)
-    tables = pd.read_html('Characters/' + char + '.html')
+    tables = pd.read_html('Characters/' + char + '.html', extract_links="body")
     try:
         df = tables[3]
         df.columns = df.columns.get_level_values(1) 
@@ -48,10 +48,11 @@ for row in df.itertuples():
 
     names = (
         df["Sort by name"]
-        .dropna()                       # skip the NaNs in that column
-        .str.split(" - ", n=1)          # split only once
-        .str[0]                         # take the bit before the dash
-        .tolist()                       # turn into a regular Python list
+        .dropna()
+        .apply(lambda x: x[0] if isinstance(x, tuple) else x)
+        .str.split(" - ", n=1)
+        .str[0]
+        .tolist()
     )
 
     print(names)
