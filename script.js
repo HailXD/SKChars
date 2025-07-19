@@ -54,8 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     skinIndex.textContent = `Index: ${skin.index}`;
 
                     skinElement.appendChild(skinGif);
-                    skinElement.appendChild(skinName);
                     skinElement.appendChild(skinIndex);
+                    skinElement.appendChild(skinName);
                     skinsContainer.appendChild(skinElement);
                 });
 
