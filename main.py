@@ -21,7 +21,7 @@ def _pretty(col):
     return str(col)
 
 df.columns = [_pretty(c) for c in df.columns]
-df = df[['Character', 'ID']]
+df = df[['Character', 'ID']].copy()
 df['URL'] = df['Character'].apply(lambda x: x[1] if isinstance(x, tuple) else None)
 df["Character"] = df["Character"].apply(lambda x: x[0] if isinstance(x, tuple) else x)
 df['ID'] = [_pretty(c).lstrip('0') for c in df['ID']]
@@ -29,12 +29,4 @@ df['ID'] = df['ID'].replace('', '0')
 df['ID'] = df['ID'].astype(int)
 df = df[df['ID'] < 100]
 
-for row in df.iterrows():
-    print(row)
-    name = row[["Character"]]
-    url = base + row["URL"]
-    
-    pd.read_html(url)
-    with open(f"characters/{name}.pkl", "wb") as f:
-        pkl.dump(row, f)
-    break
+print(df)
