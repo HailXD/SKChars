@@ -1,13 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const charactersContainer = document.getElementById('characters-container');
     const searchBar           = document.getElementById('search-bar');
-    const hailContainer       = document.getElementById('hail-container');
-    const xmlInput            = document.getElementById('xml-input');
-    const processButton       = document.getElementById('process-button');
-    const updateButton        = document.getElementById('update-button');
-    const gemsInput           = document.getElementById('gems-input');
-    const codeOutput          = document.getElementById('code-output');
-    const copyButton          = document.getElementById('copy-button');
 
     /* ------- state ------- */
     let charactersData = {};
@@ -15,9 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let unlockedSkins  = {};          // all known skin / unlock values
     let changedSkins   = new Set();   // keys the user actually toggled this session
 
-    /* ------- hail ui toggle ------- */
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('hail')) hailContainer.style.display = 'block';
 
     /* ------- load character atlas ------- */
     fetch('characters.json')
@@ -61,37 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const skinEl   = document.createElement('div');
                 skinEl.classList.add('skin');
 
-                const unlockKey = `${playerId}_c${character.id}_unlock`;
-                const skinKey   = `${playerId}_c${character.id}_skin${skin.index}`;
-
-                if (unlockedSkins[unlockKey]?.toLowerCase() === 'true' &&
-                    unlockedSkins[skinKey] === 1) {
-                    skinEl.classList.add('unlocked');
-                }
-
-                /* click handler */
-                skinEl.addEventListener('click', () => {
-                    const wasUnlocked = skinEl.classList.toggle('unlocked');
-                    if (wasUnlocked) {
-                        unlockedSkins[unlockKey] = 'true';
-                        unlockedSkins[skinKey]   = 1;
-                    } else {
-                        unlockedSkins[skinKey]   = 0;
-                        /* If this was skin 0 or no skins remain, _unlock => false */
-                        if (skin.index === 0) {
-                            unlockedSkins[unlockKey] = 'false';
-                        } else {
-                            const otherSkinKeys = Object.keys(unlockedSkins)
-                                .filter(k => k.startsWith(`${playerId}_c${character.id}_skin`) && k !== skinKey);
-                            const anyStillUnlocked = otherSkinKeys.some(k => unlockedSkins[k] === 1);
-                            if (!anyStillUnlocked) unlockedSkins[unlockKey] = 'false';
-                        }
-                    }
-
-                    /* record changed keys */
-                    markKeyChanged(skinKey);
-                    markKeyChanged(unlockKey);
-                });
 
                 /* visuals */
                 const img   = document.createElement('img');
