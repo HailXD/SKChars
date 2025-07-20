@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const idx = document.createElement("div");
                 idx.classList.add("skin-index");
-                idx.textContent = `Index: ${skin.index}`;
+                idx.innerText = `Index: ${skin.index}\n_c${character.id}_skin${skin.index}`;
 
                 const priceEl = document.createElement("div");
                 priceEl.classList.add("skin-price");
