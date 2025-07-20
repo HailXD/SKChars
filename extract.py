@@ -50,8 +50,15 @@ for char_i, row in enumerate(df.itertuples()):
         df["Sort by name"]
         .dropna()
         .apply(lambda x: x[0] if isinstance(x, tuple) else x)
-        .str.split(" - ", n=1)
-        .str[0]
+        .apply(lambda x: ' - '.join(x[:50].split(' - ')[:-1]) if ' - ' in x[:50] else x[:50])
+        .tolist()
+    )
+
+    prices = (
+        df["Sort by name"]
+        .dropna()
+        .apply(lambda x: x[0] if isinstance(x, tuple) else x)
+        .apply(lambda x: x[:50].split('-')[-1].split(' Has', 1)[0].split(' Part', 1)[0].replace('\\xa0', ''))
         .tolist()
     )
 
@@ -69,8 +76,9 @@ for char_i, row in enumerate(df.itertuples()):
             {
                 "name": name,
                 "url": url,
+                "price": price,
                 "index": index
-            } for index, name, url in list(zip(range(len(names)), names, urls))
+            } for index, name, url, price in list(zip(range(len(names)), names, urls, prices))
         ]
     }
 
