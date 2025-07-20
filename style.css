@@ -83,6 +83,13 @@ h1 {
     font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.5);
 }
+
+.skin-price {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #ffd700; /* Gold color for price */
+    margin-top: 5px;
+}
 #search-bar {
     display: block;
     width: 50%;

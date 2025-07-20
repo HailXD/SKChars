@@ -58,7 +58,7 @@ for char_i, row in enumerate(df.itertuples()):
         df["Sort by name"]
         .dropna()
         .apply(lambda x: x[0] if isinstance(x, tuple) else x)
-        .apply(lambda x: x[:50].split('-')[-1].split(' Has', 1)[0].split(' Part', 1)[0].replace('\\xa0', ''))
+        .apply(lambda x: x[:50].split('-')[-1].split(' Has', 1)[0].split(' Part', 1)[0].split(' has', 1)[0].split(' part', 1)[0].replace('\\xa0', ''))
         .tolist()
     )
 

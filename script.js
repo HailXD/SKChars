@@ -58,6 +58,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 idx.classList.add("skin-index");
                 idx.textContent = `Index: ${skin.index}`;
 
+                const priceEl = document.createElement("div");
+                priceEl.classList.add("skin-price");
+                priceEl.textContent = skin.price;
+
                 const label = document.createElement("div");
                 label.classList.add("skin-name");
                 label.textContent = skin.name;
@@ -65,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 skinEl.appendChild(img);
                 skinEl.appendChild(idx);
                 skinEl.appendChild(label);
+                skinEl.appendChild(priceEl);
                 skinsWrap.appendChild(skinEl);
             });
 
