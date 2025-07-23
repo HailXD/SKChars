@@ -62,14 +62,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 priceEl.classList.add("skin-price");
                 priceEl.textContent = skin.price;
 
+                const skinInfo = document.createElement("div");
+                skinInfo.classList.add("skin-info");
+
                 const label = document.createElement("div");
                 label.classList.add("skin-name");
                 label.textContent = skin.name;
 
+                skinInfo.appendChild(label);
+                skinInfo.appendChild(priceEl);
+
                 skinEl.appendChild(img);
                 skinEl.appendChild(idx);
-                skinEl.appendChild(label);
-                skinEl.appendChild(priceEl);
+                skinEl.appendChild(skinInfo);
                 skinsWrap.appendChild(skinEl);
             });
 
