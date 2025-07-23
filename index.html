@@ -9,6 +9,18 @@
 <body>
     <div class="container">
         <h1>Soul Knight Characters</h1>
+
+        <div id="hail-container" style="display: none;">
+            <textarea id="xml-input" placeholder="Paste your .plist XML here..."></textarea>
+            <div class="controls">
+                <button id="process-button">Process</button>
+                <button id="update-button">Update</button>
+                <input type="text" id="key-search-bar" placeholder="Search for a key...">
+            </div>
+            <div id="table-container"></div>
+            <textarea id="xml-output" readonly></textarea>
+        </div>
+
         <input type="text" id="search-bar" placeholder="Search for a character or skin...">
         <div id="characters-container"></div>
     </div>

@@ -117,3 +117,78 @@ h1 {
     outline: none;
     border-color: rgba(255, 255, 255, 0.5);
 }
+
+#hail-container {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 40px;
+}
+
+#xml-input, #xml-output {
+    width: 100%;
+    height: 150px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: #fff;
+    padding: 10px;
+    font-family: monospace;
+    margin-bottom: 20px;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.controls button {
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    background: #007aff;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.controls button:hover {
+    background: #0056b3;
+}
+
+#key-search-bar {
+    flex-grow: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+#table-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background: rgba(0, 0, 0, 0.2);
+    position: sticky;
+    top: 0;
+}
+
+td[contenteditable="true"] {
+    background: rgba(255, 255, 255, 0.2);
+}

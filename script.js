@@ -1,6 +1,19 @@
 document.addEventListener("DOMContentLoaded", () => {
     const charactersContainer = document.getElementById("characters-container");
     const searchBar = document.getElementById("search-bar");
+    const hailContainer = document.getElementById("hail-container");
+    const xmlInput = document.getElementById("xml-input");
+    const processButton = document.getElementById("process-button");
+    const updateButton = document.getElementById("update-button");
+    const keySearchBar = document.getElementById("key-search-bar");
+    const tableContainer = document.getElementById("table-container");
+    const xmlOutput = document.getElementById("xml-output");
+
+    let parsedData = {};
+
+    if (window.location.search.includes("hail")) {
+        hailContainer.style.display = "block";
+    }
 
     let charactersData = {};
     let playerId = "";
@@ -56,7 +69,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const idx = document.createElement("div");
                 idx.classList.add("skin-index");
-                idx.innerText = `Index: ${skin.index}\n_c${character.id}_skin${skin.index}`;
+                const skinId = `_c${character.id}_skin${skin.index}`;
+                idx.innerText = `Index: ${skin.index}\n${skinId}`;
+
+                skinEl.addEventListener("click", () => {
+                    keySearchBar.value = skinId;
+                    keySearchBar.dispatchEvent(new Event("input"));
+                });
 
                 const priceEl = document.createElement("div");
                 priceEl.classList.add("skin-price");
@@ -99,98 +118,95 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     processButton.addEventListener("click", () => {
-        playerId = "";
-        unlockedSkins = {};
-        changedSkins = new Set();
+        const xmlText = xmlInput.value;
+        if (!xmlText) return;
 
-        const xml = xmlInput.value;
-        const doc = new DOMParser().parseFromString(xml, "application/xml");
-        const keys = doc.getElementsByTagName("key");
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+        const dict = xmlDoc.querySelector("dict");
+        if (!dict) return;
 
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i].textContent;
-            if (
-                !playerId &&
-                key.includes("_c0") &&
-                !key.toLowerCase().includes("local")
-            ) {
-                playerId = key.split("_")[0];
-            }
-            if (playerId && key.startsWith(playerId)) {
-                const valNode = keys[i].nextElementSibling;
-                if (!valNode) continue;
-                unlockedSkins[key] =
-                    valNode.tagName === "integer"
-                        ? parseInt(valNode.textContent, 10)
-                        : valNode.textContent;
+        const children = Array.from(dict.children);
+        parsedData = {};
+
+        for (let i = 0; i < children.length; i += 2) {
+            if (children[i].tagName === 'key') {
+                const key = children[i].textContent;
+                const valueElement = children[i + 1];
+                const type = valueElement.tagName;
+                const value = valueElement.textContent;
+                parsedData[key] = { type, value };
             }
         }
-        renderCharacters(charactersData);
+        renderTable(parsedData);
     });
+
+    function renderTable(data) {
+        tableContainer.innerHTML = "";
+        const table = document.createElement("table");
+        const thead = document.createElement("thead");
+        const tbody = document.createElement("tbody");
+
+        const headerRow = document.createElement("tr");
+        const keyHeader = document.createElement("th");
+        keyHeader.textContent = "Key";
+        const valueHeader = document.createElement("th");
+        valueHeader.textContent = "Value";
+        const typeHeader = document.createElement("th");
+        typeHeader.textContent = "Type";
+        headerRow.appendChild(keyHeader);
+        headerRow.appendChild(valueHeader);
+        headerRow.appendChild(typeHeader);
+        thead.appendChild(headerRow);
+
+        for (const key in data) {
+            const row = document.createElement("tr");
+            const keyCell = document.createElement("td");
+            keyCell.textContent = key;
+            const valueCell = document.createElement("td");
+            valueCell.textContent = data[key].value;
+            valueCell.contentEditable = "true";
+            valueCell.addEventListener("input", (e) => {
+                parsedData[key].value = e.target.textContent;
+            });
+            const typeCell = document.createElement("td");
+            typeCell.textContent = data[key].type;
+            row.appendChild(keyCell);
+            row.appendChild(valueCell);
+            row.appendChild(typeCell);
+            tbody.appendChild(row);
+        }
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        tableContainer.appendChild(table);
+    }
 
     updateButton.addEventListener("click", () => {
-        let xmlData = xmlInput.value;
+        let xmlString = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>`;
 
-        if (!playerId) processButton.click();
-
-        const gemsKey = `${playerId}_gems`;
-        const lastGemsKey = `${playerId}_last_gems`;
-        const gemsValue = gemsInput.value;
-        if (gemsValue) {
-            const gemsRe = new RegExp(
-                `<key>${gemsKey}<\\/key>\\s*<integer>\\d+<\\/integer>`
-            );
-            const lastGemsRe = new RegExp(
-                `<key>${lastGemsKey}<\\/key>\\s*<integer>\\d+<\\/integer>`
-            );
-            if (gemsRe.test(xmlData)) {
-                xmlData = xmlData.replace(
-                    gemsRe,
-                    `<key>${gemsKey}</key><integer>${gemsValue}</integer>`
-                );
-                xmlData = xmlData.replace(
-                    lastGemsRe,
-                    `<key>${lastGemsKey}</key><integer>${gemsValue}</integer>`
-                );
-            } else {
-                xmlData = xmlData.replace(
-                    "</dict>",
-                    `<key>${gemsKey}</key><integer>${gemsValue}</integer></dict>`
-                );
-            }
+        for (const key in parsedData) {
+            const { type, value } = parsedData[key];
+            xmlString += `<key>${key}</key><${type}>${value}</${type}>`;
         }
 
-        for (const key of changedSkins) {
-            if (key.endsWith("_gems")) continue;
+        xmlString += `</dict>
+</plist>`;
 
-            const value = unlockedSkins[key];
-            const keyRe = new RegExp(
-                `<key>${key}<\\/key>\\s*<(integer|string)>[^<]+<\\/\\1>`
-            );
-            let repl =
-                `<key>${key}</key>` +
-                (typeof value === "number"
-                    ? `<integer>${value}</integer>`
-                    : `<string>${value}</string>`);
-
-            if (keyRe.test(xmlData)) {
-                xmlData = xmlData.replace(keyRe, repl);
-            } else {
-                xmlData = xmlData.replace("</dict>", `${repl}</dict>`);
-            }
-        }
-
-        codeOutput.textContent = xmlData.replace(/>\s+</g, "><").trim();
+        xmlOutput.value = xmlString;
     });
 
-    copyButton.addEventListener("click", () => {
-        const sel = window.getSelection();
-        const rng = document.createRange();
-        rng.selectNodeContents(codeOutput);
-        sel.removeAllRanges();
-        sel.addRange(rng);
-
-        copyButton.textContent = "Copied!";
-        setTimeout(() => (copyButton.textContent = "Copy"), 1500);
+    keySearchBar.addEventListener("input", (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filteredData = {};
+        for (const key in parsedData) {
+            if (key.toLowerCase().includes(searchTerm)) {
+                filteredData[key] = parsedData[key];
+            }
+        }
+        renderTable(filteredData);
     });
 });
