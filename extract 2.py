@@ -66,8 +66,8 @@ for i, row in enumerate(d):
     pruned = False
     for j, word in enumerate(words):
         capital = 0
-        for k, char in enumerate(word):
-            if char.isupper():
+        for k, chard in enumerate(word):
+            if chard.isupper():
                 capital += 1
             if capital > 1:
                 pruned = True
@@ -78,6 +78,7 @@ for i, row in enumerate(d):
             break
 
     if char not in results:
+        print(char)
         continue
 
     results[char]['skills'] = []
