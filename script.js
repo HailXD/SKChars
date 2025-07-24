@@ -191,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 parsedData[fullCharId].value = "False";
                 parsedData[fullCharId].type = "string";
             } else {
-                parsedData[fullCharId] = { type: "string", value: "False" };
+                parsedData[fullCharId] = { type: "string", value: "False", originalType: "string" };
             }
         } else {
             unlockedCharacters.add(charId);
@@ -204,7 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 parsedData[fullCharId].value = "True";
                 parsedData[fullCharId].type = "string";
             } else {
-                parsedData[fullCharId] = { type: "string", value: "True" };
+                parsedData[fullCharId] = { type: "string", value: "True", originalType: "string" };
             }
         }
         changedKeys.add(fullCharId);
@@ -244,7 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const valueElement = children[i + 1];
                 const type = valueElement.tagName;
                 const value = valueElement.textContent;
-                parsedData[key] = { type, value };
+                parsedData[key] = { type, value, originalType: type };
             }
         }
         
@@ -256,9 +256,12 @@ document.addEventListener("DOMContentLoaded", () => {
             for (const key in parsedData) {
                 const keyParts = key.split('_');
                 if (keyParts.length === 3 && keyParts[0] === playerId) {
-                    if (keyParts[1].startsWith('c') && keyParts[2] === 'unlock' && String(parsedData[key].value).toLowerCase() === 'true') {
-                        unlockedCharacters.add(parseInt(keyParts[1].substring(1)));
-                    } else if (parsedData[key].value === '1') {
+                    const data = parsedData[key];
+                    if (keyParts[1].startsWith('c') && keyParts[2] === 'unlock') {
+                        if (data.type === 'true' || String(data.value).toLowerCase() === 'true') {
+                            unlockedCharacters.add(parseInt(keyParts[1].substring(1)));
+                        }
+                    } else if (data.value === '1') {
                         unlockedSkins.add(`_${keyParts[1]}_${keyParts[2]}`);
                     }
                 }
@@ -324,11 +327,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         for (const key of changedKeys) {
             if (parsedData[key]) {
-                const { type, value } = parsedData[key];
+                const { type: newType, value, originalType } = parsedData[key];
                 const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                
+
                 const searchRegex = new RegExp(
-                    `(<key>${escapedKey}<\\/key>\\s*<[a-z]+>)(.*?)(<\\/[a-z]+>)`,
+                    `(<key>${escapedKey}<\\/key>\\s*)(<${originalType}>.*?<\\/${originalType}>|<${originalType}\\/>)`,
                     "s"
                 );
 
@@ -338,11 +341,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     .replace(/>/g, ">")
                     .replace(/"/g, '"')
                     .replace(/'/g, "'");
+                
+                const replacementString = `$1<${newType}>${escapedValue}</${newType}>`;
 
                 if (updatedXml.match(searchRegex)) {
-                    updatedXml = updatedXml.replace(searchRegex, `$1${escapedValue}</${type}>`);
+                    updatedXml = updatedXml.replace(searchRegex, replacementString);
                 } else {
-                    newKeysXml += `    <key>${key}</key>\n    <${type}>${escapedValue}</${type}>\n`;
+                    newKeysXml += `    <key>${key}</key>\n    <${newType}>${escapedValue}</${newType}>\n`;
                 }
             }
         }
