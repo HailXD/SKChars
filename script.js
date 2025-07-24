@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const xmlInput = document.getElementById("xml-input");
     const processButton = document.getElementById("process-button");
     const updateButton = document.getElementById("update-button");
+    const addSkinButton = document.getElementById("add-skin-button");
     const keySearchBar = document.getElementById("key-search-bar");
     const tableContainer = document.getElementById("table-container");
     const xmlOutput = document.getElementById("xml-output");
@@ -18,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let charactersData = {};
     let playerId = "";
-    let unlockedSkins = {};
+    let unlockedSkins = new Set();
     let changedSkins = new Set();
 
     fetch("characters.json")
@@ -63,6 +64,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 const skinEl = document.createElement("div");
                 skinEl.classList.add("skin");
 
+                const skinId = `_c${character.id}_skin${skin.index}`;
+                if (unlockedSkins.has(skinId)) {
+                    skinEl.classList.add("unlocked");
+                }
+
                 const img = document.createElement("img");
                 img.classList.add("skin-gif");
                 img.src = skin.url;
@@ -70,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const idx = document.createElement("div");
                 idx.classList.add("skin-index");
-                const skinId = `_c${character.id}_skin${skin.index}`;
                 idx.innerText = `Index: ${skin.index}\n${skinId}`;
 
                 skinEl.addEventListener("click", () => {
@@ -141,7 +146,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 parsedData[key] = { type, value };
             }
         }
+        
+        playerId = parsedData['last_account_id'] ? parsedData['last_account_id'].value : "";
+        unlockedSkins.clear();
+
+        if (playerId) {
+            for (const key in parsedData) {
+                const keyParts = key.split('_');
+                if (keyParts.length === 3 && keyParts[0] === playerId && parsedData[key].value === '1') {
+                    unlockedSkins.add(`_${keyParts[1]}_${keyParts[2]}`);
+                }
+            }
+        }
+        
         renderTable(parsedData);
+        renderCharacters(charactersData);
     });
 
     function renderTable(data) {
@@ -188,13 +207,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updateButton.addEventListener("click", () => {
         let updatedXml = xmlInput.value;
+        let newKeysXml = "";
 
         for (const key of changedKeys) {
             if (parsedData[key]) {
                 const { type, value } = parsedData[key];
-
                 const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
+                
                 const searchRegex = new RegExp(
                     `(<key>${escapedKey}<\\/key>\\s*<${type}>)(.*?)(<\\/${type}>)`,
                     "s"
@@ -207,11 +226,39 @@ document.addEventListener("DOMContentLoaded", () => {
                     .replace(/"/g, '"')
                     .replace(/'/g, "'");
 
-                updatedXml = updatedXml.replace(searchRegex, `$1${escapedValue}$3`);
+                if (updatedXml.match(searchRegex)) {
+                    updatedXml = updatedXml.replace(searchRegex, `$1${escapedValue}$3`);
+                } else {
+                    newKeysXml += `    <key>${key}</key>\n    <${type}>${escapedValue}</${type}>\n`;
+                }
             }
         }
+
+        if (newKeysXml) {
+            updatedXml = updatedXml.replace(/<\/dict>/, `${newKeysXml}</dict>`);
+        }
+
         xmlOutput.value = updatedXml;
         changedKeys.clear();
+    });
+
+    addSkinButton.addEventListener("click", () => {
+        if (!playerId) {
+            alert("Player ID not found. Please process an XML file first.");
+            return;
+        }
+
+        const skinId = prompt("Enter the skin ID to add (e.g., _c1_skin1):");
+        if (skinId) {
+            const key = `${playerId}${skinId}`;
+            if (parsedData[key]) {
+                alert(`Skin with key "${key}" already exists.`);
+                return;
+            }
+            parsedData[key] = { type: "integer", value: "1" };
+            changedKeys.add(key);
+            renderTable(parsedData);
+        }
     });
 
     keySearchBar.addEventListener("input", (e) => {

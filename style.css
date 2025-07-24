@@ -192,3 +192,11 @@ th {
 td[contenteditable="true"] {
     background: rgba(255, 255, 255, 0.2);
 }
+
+.skin.unlocked .skin-name {
+    color: #4cd964; /* Green color for unlocked skin name */
+}
+
+.skin.unlocked .skin-gif {
+    border: 2px solid #4cd964; /* Green border for unlocked skin gif */
+}
