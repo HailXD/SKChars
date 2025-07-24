@@ -8,7 +8,9 @@ import pandas as pd
 # tables = pd.read_html(website, extract_links="body")
 tables = pd.read_html("characters.html", extract_links="body")
 skills = None
+characters = None
 skins = []
+
 for i, table in enumerate(tables):
     if skills is None and 'skill' in [c.lower() for c in table.columns.tolist()]:
         skills = table.copy()
@@ -16,7 +18,9 @@ for i, table in enumerate(tables):
     if 'sort by cost' in [c[1].lower() for c in table.columns]:
         skins.append(table)
         continue
-
+    if characters is None and 'ID' in table.columns.tolist():
+        characters = table.copy()
+        continue
 
 def _pretty(col):
     if isinstance(col, tuple):
@@ -28,10 +32,13 @@ def _pretty(col):
 
 results = {}
 
+characters = characters[['Character', 'ID']].copy()
+characters['Character'] = characters['Character'].apply(lambda x: _pretty(x))
+characters['ID'] = characters['ID'].apply(lambda x: int(_pretty(x)))
 for ci, c in enumerate(skins):
     char = ' '.join(c.columns[0][0].split(' ')[1:]).split('has')[0].strip()
     results[char] = {
-        "id": ci,
+        "id": int(characters[characters['Character'] == char]['ID'].values[0] if char in characters['Character'].values else None),
         "skins": []
     }
     raw_skins = c.iloc[:, 0].tolist()
