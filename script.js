@@ -25,6 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let unlockedCharacters = new Set();
     let newlyUnlockedCharacters = new Map();
     let newlyLockedCharacters = new Map();
+    let unlockedSkills = new Map();
+    let newlyUnlockedSkills = new Map();
+    let newlyLockedSkills = new Map();
 
     fetch("characters.json")
         .then((r) => r.json())
@@ -108,6 +111,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
             card.appendChild(header);
             card.appendChild(skinsWrap);
+
+            const skillsContainer = document.createElement("div");
+            skillsContainer.classList.add("skills-container");
+
+            const characterSkills = unlockedSkills.get(characterName);
+            if (characterSkills) {
+                const sortedSkills = [...characterSkills.entries()].sort((a, b) => a[0] - b[0]);
+
+                for (const [skillNumber, isUnlocked] of sortedSkills) {
+                    const skillEl = document.createElement('div');
+                    skillEl.classList.add('skill-item');
+                    if (isUnlocked) {
+                        skillEl.classList.add('unlocked');
+                    }
+                    skillEl.textContent = `Skill ${skillNumber}`;
+                    skillEl.addEventListener('click', () => toggleSkill(characterName, skillNumber));
+                    skillsContainer.appendChild(skillEl);
+                }
+            }
+
+            if (skillsContainer.hasChildNodes()) {
+                card.appendChild(skillsContainer);
+            }
+
             charactersContainer.appendChild(card);
         }
     }
@@ -134,7 +161,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!skin) return;
 
         if (!playerId) {
-            alert("Player ID not found. Please process an XML file first.");
             return;
         }
 
@@ -170,6 +196,51 @@ document.addEventListener("DOMContentLoaded", () => {
         renderCharacters(charactersData);
         renderChanges();
     }
+
+    function toggleSkill(characterName, skillNumber) {
+        if (!playerId) {
+            alert("Player ID not found. Please process an XML file first.");
+            return;
+        }
+
+        const fullSkillKey = `${playerId}_c_${characterName}_skill_${skillNumber}_unlock`;
+        const characterSkills = unlockedSkills.get(characterName);
+        if (!characterSkills) return;
+
+        const isUnlocked = characterSkills.get(skillNumber);
+        const skillId = `${characterName}_${skillNumber}`;
+
+        if (isUnlocked) { // it was unlocked, now locking it
+            characterSkills.set(skillNumber, false);
+            if (newlyUnlockedSkills.has(skillId)) {
+                newlyUnlockedSkills.delete(skillId);
+            } else {
+                newlyLockedSkills.set(skillId, { characterName, skillNumber });
+            }
+            if (parsedData[fullSkillKey]) {
+                parsedData[fullSkillKey].value = "0";
+            } else {
+                parsedData[fullSkillKey] = { type: "integer", value: "0" };
+            }
+        } else { // it was locked, now unlocking it
+            characterSkills.set(skillNumber, true);
+            if (newlyLockedSkills.has(skillId)) {
+                newlyLockedSkills.delete(skillId);
+            } else {
+                newlyUnlockedSkills.set(skillId, { characterName, skillNumber });
+            }
+            if (parsedData[fullSkillKey]) {
+                parsedData[fullSkillKey].value = "1";
+            } else {
+                parsedData[fullSkillKey] = { type: "integer", value: "1" };
+            }
+        }
+
+        changedKeys.add(fullSkillKey);
+        renderCharacters(charactersData);
+        renderChanges();
+    }
+
 
     function toggleCharacterById(charId, charName) {
         if (!playerId) {
@@ -251,12 +322,30 @@ document.addEventListener("DOMContentLoaded", () => {
         playerId = parsedData['last_account_id'] ? parsedData['last_account_id'].value : "";
         unlockedSkins.clear();
         unlockedCharacters.clear();
+        unlockedSkills.clear();
+        newlyUnlockedSkills.clear();
+        newlyLockedSkills.clear();
 
         if (playerId) {
+            const skillRegex = new RegExp(`^${playerId}_c_(.+)_skill_(\\d+)_unlock$`);
             for (const key in parsedData) {
+                const data = parsedData[key];
+
+                const skillMatch = key.match(skillRegex);
+                if (skillMatch) {
+                    const characterName = skillMatch[1];
+                    const skillNumber = parseInt(skillMatch[2], 10);
+                    const isUnlocked = data.value === '1';
+
+                    if (!unlockedSkills.has(characterName)) {
+                        unlockedSkills.set(characterName, new Map());
+                    }
+                    unlockedSkills.get(characterName).set(skillNumber, isUnlocked);
+                    continue;
+                }
+
                 const keyParts = key.split('_');
                 if (keyParts.length === 3 && keyParts[0] === playerId) {
-                    const data = parsedData[key];
                     if (keyParts[1].startsWith('c') && keyParts[2] === 'unlock') {
                         if (data.type === 'true' || String(data.value).toLowerCase() === 'true') {
                             unlockedCharacters.add(parseInt(keyParts[1].substring(1)));
@@ -364,6 +453,8 @@ document.addEventListener("DOMContentLoaded", () => {
         newlyLocked.clear();
         newlyUnlockedCharacters.clear();
         newlyLockedCharacters.clear();
+        newlyUnlockedSkills.clear();
+        newlyLockedSkills.clear();
         renderChanges();
     });
 
@@ -421,6 +512,15 @@ document.addEventListener("DOMContentLoaded", () => {
             addedList.appendChild(li);
         }
 
+        for (const [skillId, skillData] of newlyUnlockedSkills.entries()) {
+            const li = document.createElement("li");
+            li.addEventListener('click', () => toggleSkill(skillData.characterName, skillData.skillNumber));
+            const text = document.createElement("span");
+            text.textContent = `${skillData.characterName} - Skill ${skillData.skillNumber}`;
+            li.appendChild(text);
+            addedList.appendChild(li);
+        }
+
         for (const [charId, charData] of newlyUnlockedCharacters.entries()) {
             const li = document.createElement("li");
             li.addEventListener('click', () => toggleCharacterById(charId, charData.name));
@@ -449,6 +549,15 @@ document.addEventListener("DOMContentLoaded", () => {
             li.addEventListener('click', () => toggleCharacterById(charId, charData.name));
             const text = document.createElement("span");
             text.textContent = `${charData.name} (ID: c${charId})`;
+            li.appendChild(text);
+            removedList.appendChild(li);
+        }
+
+        for (const [skillId, skillData] of newlyLockedSkills.entries()) {
+            const li = document.createElement("li");
+            li.addEventListener('click', () => toggleSkill(skillData.characterName, skillData.skillNumber));
+            const text = document.createElement("span");
+            text.textContent = `${skillData.characterName} - Skill ${skillData.skillNumber}`;
             li.appendChild(text);
             removedList.appendChild(li);
         }
