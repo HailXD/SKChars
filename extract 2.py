@@ -29,7 +29,7 @@ def _pretty(col):
 results = {}
 
 for ci, c in enumerate(skins):
-    char = c.columns[0][0].split(' ')[1]
+    char = ' '.join(c.columns[0][0].split(' ')[1:]).split('has')[0].strip()
     results[char] = {
         "id": ci,
         "skins": []
