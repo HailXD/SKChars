@@ -267,3 +267,11 @@ td[contenteditable="true"] {
     border-radius: 5px;
     background: rgba(0, 0, 0, 0.2);
 }
+
+.character-name.unlocked {
+    color: #4cd964; /* Green color for unlocked character name */
+}
+
+.character-name {
+    cursor: pointer;
+}

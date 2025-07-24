@@ -20,9 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
     let charactersData = {};
     let playerId = "";
     let unlockedSkins = new Set();
-    let changedSkins = new Set();
     let newlyUnlocked = new Map();
     let newlyLocked = new Map();
+    let unlockedCharacters = new Set();
+    let newlyUnlockedCharacters = new Map();
+    let newlyLockedCharacters = new Map();
 
     fetch("characters.json")
         .then((r) => r.json())
@@ -31,10 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
             renderCharacters(charactersData);
         })
         .catch((err) => console.error("Error fetching character data:", err));
-
-    function markKeyChanged(key) {
-        changedSkins.add(key);
-    }
 
     function renderCharacters(data) {
         charactersContainer.innerHTML = "";
@@ -51,6 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const nameEl = document.createElement("div");
             nameEl.classList.add("character-name");
             nameEl.textContent = characterName;
+            if (unlockedCharacters.has(character.id)) {
+                nameEl.classList.add("unlocked");
+            }
+            nameEl.addEventListener('click', () => toggleCharacterById(character.id, characterName));
 
             const idEl = document.createElement("div");
             idEl.classList.add("character-id");
@@ -169,6 +171,47 @@ document.addEventListener("DOMContentLoaded", () => {
         renderChanges();
     }
 
+    function toggleCharacterById(charId, charName) {
+        if (!playerId) {
+            alert("Player ID not found. Please process an XML file first.");
+            return;
+        }
+
+        const fullCharId = `${playerId}_c${charId}_unlock`;
+        const isUnlocked = unlockedCharacters.has(charId);
+
+        if (isUnlocked) {
+            unlockedCharacters.delete(charId);
+            if (newlyUnlockedCharacters.has(charId)) {
+                newlyUnlockedCharacters.delete(charId);
+            } else {
+                newlyLockedCharacters.set(charId, { name: charName });
+            }
+            if (parsedData[fullCharId]) {
+                parsedData[fullCharId].value = "False";
+                parsedData[fullCharId].type = "string";
+            } else {
+                parsedData[fullCharId] = { type: "string", value: "False" };
+            }
+        } else {
+            unlockedCharacters.add(charId);
+            if (newlyLockedCharacters.has(charId)) {
+                newlyLockedCharacters.delete(charId);
+            } else {
+                newlyUnlockedCharacters.set(charId, { name: charName });
+            }
+            if (parsedData[fullCharId]) {
+                parsedData[fullCharId].value = "True";
+                parsedData[fullCharId].type = "string";
+            } else {
+                parsedData[fullCharId] = { type: "string", value: "True" };
+            }
+        }
+        changedKeys.add(fullCharId);
+        renderCharacters(charactersData);
+        renderChanges();
+    }
+
     searchBar.addEventListener("input", (e) => {
         const term = e.target.value.toLowerCase();
         const filtered = {};
@@ -186,8 +229,6 @@ document.addEventListener("DOMContentLoaded", () => {
     processButton.addEventListener("click", () => {
         const xmlText = xmlInput.value;
         if (!xmlText) return;
-
-        changedKeys.clear();
 
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlText, "application/xml");
@@ -209,16 +250,21 @@ document.addEventListener("DOMContentLoaded", () => {
         
         playerId = parsedData['last_account_id'] ? parsedData['last_account_id'].value : "";
         unlockedSkins.clear();
+        unlockedCharacters.clear();
 
         if (playerId) {
             for (const key in parsedData) {
                 const keyParts = key.split('_');
-                if (keyParts.length === 3 && keyParts[0] === playerId && parsedData[key].value === '1') {
-                    unlockedSkins.add(`_${keyParts[1]}_${keyParts[2]}`);
+                if (keyParts.length === 3 && keyParts[0] === playerId) {
+                    if (keyParts[1].startsWith('c') && keyParts[2] === 'unlock' && String(parsedData[key].value).toLowerCase() === 'true') {
+                        unlockedCharacters.add(parseInt(keyParts[1].substring(1)));
+                    } else if (parsedData[key].value === '1') {
+                        unlockedSkins.add(`_${keyParts[1]}_${keyParts[2]}`);
+                    }
                 }
             }
         }
-        
+
         const gemsKey = `${playerId}_gems`;
         if (parsedData[gemsKey]) {
             gemsValue.textContent = parsedData[gemsKey].value;
@@ -282,7 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
                 
                 const searchRegex = new RegExp(
-                    `(<key>${escapedKey}<\\/key>\\s*<${type}>)(.*?)(<\\/${type}>)`,
+                    `(<key>${escapedKey}<\\/key>\\s*<[a-z]+>)(.*?)(<\\/[a-z]+>)`,
                     "s"
                 );
 
@@ -294,7 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     .replace(/'/g, "'");
 
                 if (updatedXml.match(searchRegex)) {
-                    updatedXml = updatedXml.replace(searchRegex, `$1${escapedValue}$3`);
+                    updatedXml = updatedXml.replace(searchRegex, `$1${escapedValue}</${type}>`);
                 } else {
                     newKeysXml += `    <key>${key}</key>\n    <${type}>${escapedValue}</${type}>\n`;
                 }
@@ -306,28 +352,37 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         xmlOutput.value = updatedXml;
+        xmlInput.value = updatedXml;
+
         changedKeys.clear();
+        newlyUnlocked.clear();
+        newlyLocked.clear();
+        newlyUnlockedCharacters.clear();
+        newlyLockedCharacters.clear();
+        renderChanges();
     });
 
 
     gemsValue.addEventListener("input", (e) => {
+        const newValue = e.target.textContent;
         const gemsKey = `${playerId}_gems`;
-        if (parsedData[gemsKey]) {
-            parsedData[gemsKey].value = e.target.textContent;
-        } else {
-            parsedData[gemsKey] = { type: 'integer', value: e.target.textContent };
-        }
-        changedKeys.add(gemsKey);
-    });
+        const lastGemsKey = `${playerId}_last_gems`;
 
-    gemsValue.addEventListener("input", (e) => {
-        const gemsKey = `${playerId}_gems`;
-        if (parsedData[gemsKey]) {
-            parsedData[gemsKey].value = e.target.textContent;
-        } else {
-            parsedData[gemsKey] = { type: 'integer', value: e.target.textContent };
+        if (parsedData[gemsKey] && parsedData[gemsKey].value !== newValue) {
+            parsedData[gemsKey].value = newValue;
+            changedKeys.add(gemsKey);
+        } else if (!parsedData[gemsKey]) {
+            parsedData[gemsKey] = { type: 'integer', value: newValue };
+            changedKeys.add(gemsKey);
         }
-        changedKeys.add(gemsKey);
+
+        if (parsedData[lastGemsKey] && parsedData[lastGemsKey].value !== newValue) {
+            parsedData[lastGemsKey].value = newValue;
+            changedKeys.add(lastGemsKey);
+        } else if (!parsedData[lastGemsKey]) {
+            parsedData[lastGemsKey] = { type: 'integer', value: newValue };
+            changedKeys.add(lastGemsKey);
+        }
     });
 
     keySearchBar.addEventListener("input", (e) => {
@@ -361,6 +416,15 @@ document.addEventListener("DOMContentLoaded", () => {
             addedList.appendChild(li);
         }
 
+        for (const [charId, charData] of newlyUnlockedCharacters.entries()) {
+            const li = document.createElement("li");
+            li.addEventListener('click', () => toggleCharacterById(charId, charData.name));
+            const text = document.createElement("span");
+            text.textContent = `${charData.name} (ID: c${charId})`;
+            li.appendChild(text);
+            addedList.appendChild(li);
+        }
+
         for (const [skinId, skinData] of newlyLocked.entries()) {
             const li = document.createElement("li");
             li.addEventListener('click', () => toggleSkinById(skinId));
@@ -371,6 +435,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const text = document.createElement("span");
             text.textContent = `${skinData.name} (Index: ${skinData.index}, ID: ${skinId})`;
             li.appendChild(img);
+            li.appendChild(text);
+            removedList.appendChild(li);
+        }
+
+        for (const [charId, charData] of newlyLockedCharacters.entries()) {
+            const li = document.createElement("li");
+            li.addEventListener('click', () => toggleCharacterById(charId, charData.name));
+            const text = document.createElement("span");
+            text.textContent = `${charData.name} (ID: c${charId})`;
             li.appendChild(text);
             removedList.appendChild(li);
         }
