@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const xmlInput = document.getElementById("xml-input");
     const processButton = document.getElementById("process-button");
     const updateButton = document.getElementById("update-button");
-    const addSkinButton = document.getElementById("add-skin-button");
     const keySearchBar = document.getElementById("key-search-bar");
     const tableContainer = document.getElementById("table-container");
     const xmlOutput = document.getElementById("xml-output");
@@ -21,6 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let playerId = "";
     let unlockedSkins = new Set();
     let changedSkins = new Set();
+    let newlyUnlocked = new Map();
+    let newlyLocked = new Map();
 
     fetch("characters.json")
         .then((r) => r.json())
@@ -79,8 +80,38 @@ document.addEventListener("DOMContentLoaded", () => {
                 idx.innerText = `Index: ${skin.index}\n${skinId}`;
 
                 skinEl.addEventListener("click", () => {
-                    keySearchBar.value = skinId;
-                    keySearchBar.dispatchEvent(new Event("input"));
+                    if (!playerId) {
+                        alert("Player ID not found. Please process an XML file first.");
+                        return;
+                    }
+
+                    const fullSkinId = `${playerId}${skinId}`;
+                    const isUnlocked = unlockedSkins.has(skinId);
+
+                    if (isUnlocked) {
+                        unlockedSkins.delete(skinId);
+                        if (newlyUnlocked.has(skinId)) {
+                            newlyUnlocked.delete(skinId);
+                        } else {
+                            newlyLocked.set(skinId, { name: skin.name, index: skin.index, url: skin.url });
+                        }
+                        parsedData[fullSkinId] = { type: "integer", value: "0" };
+                    } else {
+                        unlockedSkins.add(skinId);
+                        if (newlyLocked.has(skinId)) {
+                            newlyLocked.delete(skinId);
+                        } else {
+                            newlyUnlocked.set(skinId, { name: skin.name, index: skin.index, url: skin.url });
+                        }
+                        if (parsedData[fullSkinId]) {
+                            parsedData[fullSkinId].value = "1";
+                        } else {
+                            parsedData[fullSkinId] = { type: "integer", value: "1" };
+                        }
+                    }
+                    changedKeys.add(fullSkinId);
+                    renderCharacters(charactersData);
+                    renderChanges();
                 });
 
                 const priceEl = document.createElement("div");
@@ -242,24 +273,6 @@ document.addEventListener("DOMContentLoaded", () => {
         changedKeys.clear();
     });
 
-    addSkinButton.addEventListener("click", () => {
-        if (!playerId) {
-            alert("Player ID not found. Please process an XML file first.");
-            return;
-        }
-
-        const skinId = prompt("Enter the skin ID to add (e.g., _c1_skin1):");
-        if (skinId) {
-            const key = `${playerId}${skinId}`;
-            if (parsedData[key]) {
-                alert(`Skin with key "${key}" already exists.`);
-                return;
-            }
-            parsedData[key] = { type: "integer", value: "1" };
-            changedKeys.add(key);
-            renderTable(parsedData);
-        }
-    });
 
     keySearchBar.addEventListener("input", (e) => {
         const searchTerm = e.target.value.toLowerCase();
@@ -271,4 +284,37 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         renderTable(filteredData);
     });
+
+    function renderChanges() {
+        const addedList = document.getElementById("added-skins-list");
+        const removedList = document.getElementById("removed-skins-list");
+        addedList.innerHTML = "";
+        removedList.innerHTML = "";
+
+        for (const [skinId, skinData] of newlyUnlocked.entries()) {
+            const li = document.createElement("li");
+            const img = document.createElement("img");
+            img.src = skinData.url;
+            img.alt = skinData.name;
+            img.classList.add("skin-gif-small");
+            const text = document.createElement("span");
+            text.textContent = `${skinData.name} (Index: ${skinData.index}, ID: ${skinId})`;
+            li.appendChild(img);
+            li.appendChild(text);
+            addedList.appendChild(li);
+        }
+
+        for (const [skinId, skinData] of newlyLocked.entries()) {
+            const li = document.createElement("li");
+            const img = document.createElement("img");
+            img.src = skinData.url;
+            img.alt = skinData.name;
+            img.classList.add("skin-gif-small");
+            const text = document.createElement("span");
+            text.textContent = `${skinData.name} (Index: ${skinData.index}, ID: ${skinId})`;
+            li.appendChild(img);
+            li.appendChild(text);
+            removedList.appendChild(li);
+        }
+    }
 });

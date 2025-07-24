@@ -15,10 +15,19 @@
             <div class="controls">
                 <button id="process-button">Process</button>
                 <button id="update-button">Update</button>
-                <button id="add-skin-button">Add Skin</button>
                 <input type="text" id="key-search-bar" placeholder="Search for a key...">
             </div>
             <div id="table-container"></div>
+            <div id="changes-container">
+                <div class="change-column">
+                    <h2>Removed</h2>
+                    <ul id="removed-skins-list"></ul>
+                </div>
+                <div class="change-column">
+                    <h2>Added</h2>
+                    <ul id="added-skins-list"></ul>
+                </div>
+            </div>
             <textarea id="xml-output" readonly></textarea>
         </div>
 
