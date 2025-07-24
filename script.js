@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const keySearchBar = document.getElementById("key-search-bar");
     const tableContainer = document.getElementById("table-container");
     const xmlOutput = document.getElementById("xml-output");
+    const gemsValue = document.getElementById("gems-value");
 
     let parsedData = {};
     let changedKeys = new Set();
@@ -80,38 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 idx.innerText = `Index: ${skin.index}\n${skinId}`;
 
                 skinEl.addEventListener("click", () => {
-                    if (!playerId) {
-                        alert("Player ID not found. Please process an XML file first.");
-                        return;
-                    }
-
-                    const fullSkinId = `${playerId}${skinId}`;
-                    const isUnlocked = unlockedSkins.has(skinId);
-
-                    if (isUnlocked) {
-                        unlockedSkins.delete(skinId);
-                        if (newlyUnlocked.has(skinId)) {
-                            newlyUnlocked.delete(skinId);
-                        } else {
-                            newlyLocked.set(skinId, { name: skin.name, index: skin.index, url: skin.url });
-                        }
-                        parsedData[fullSkinId] = { type: "integer", value: "0" };
-                    } else {
-                        unlockedSkins.add(skinId);
-                        if (newlyLocked.has(skinId)) {
-                            newlyLocked.delete(skinId);
-                        } else {
-                            newlyUnlocked.set(skinId, { name: skin.name, index: skin.index, url: skin.url });
-                        }
-                        if (parsedData[fullSkinId]) {
-                            parsedData[fullSkinId].value = "1";
-                        } else {
-                            parsedData[fullSkinId] = { type: "integer", value: "1" };
-                        }
-                    }
-                    changedKeys.add(fullSkinId);
-                    renderCharacters(charactersData);
-                    renderChanges();
+                    toggleSkinById(skinId);
                 });
 
                 const priceEl = document.createElement("div");
@@ -138,6 +108,65 @@ document.addEventListener("DOMContentLoaded", () => {
             card.appendChild(skinsWrap);
             charactersContainer.appendChild(card);
         }
+    }
+
+    function findSkinData(skinId) {
+        const match = skinId.match(/_c(\d+)_skin(\d+)/);
+        if (!match) return null;
+
+        const charId = parseInt(match[1], 10);
+        const skinIndex = parseInt(match[2], 10);
+
+        for (const charName in charactersData) {
+            const character = charactersData[charName];
+            if (character.id === charId) {
+                const skin = character.skins.find(s => s.index === skinIndex);
+                return skin;
+            }
+        }
+        return null;
+    }
+
+    function toggleSkinById(skinId) {
+        const skin = findSkinData(skinId);
+        if (!skin) return;
+
+        if (!playerId) {
+            alert("Player ID not found. Please process an XML file first.");
+            return;
+        }
+
+        const fullSkinId = `${playerId}${skinId}`;
+        const isUnlocked = unlockedSkins.has(skinId);
+
+        if (isUnlocked) {
+            unlockedSkins.delete(skinId);
+            if (newlyUnlocked.has(skinId)) {
+                newlyUnlocked.delete(skinId);
+            } else {
+                newlyLocked.set(skinId, { name: skin.name, index: skin.index, url: skin.url });
+            }
+            if (parsedData[fullSkinId]) {
+                parsedData[fullSkinId].value = "0";
+            } else {
+                parsedData[fullSkinId] = { type: "integer", value: "0" };
+            }
+        } else {
+            unlockedSkins.add(skinId);
+            if (newlyLocked.has(skinId)) {
+                newlyLocked.delete(skinId);
+            } else {
+                newlyUnlocked.set(skinId, { name: skin.name, index: skin.index, url: skin.url });
+            }
+            if (parsedData[fullSkinId]) {
+                parsedData[fullSkinId].value = "1";
+            } else {
+                parsedData[fullSkinId] = { type: "integer", value: "1" };
+            }
+        }
+        changedKeys.add(fullSkinId);
+        renderCharacters(charactersData);
+        renderChanges();
     }
 
     searchBar.addEventListener("input", (e) => {
@@ -190,6 +219,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         
+        const gemsKey = `${playerId}_gems`;
+        if (parsedData[gemsKey]) {
+            gemsValue.textContent = parsedData[gemsKey].value;
+        } else {
+            gemsValue.textContent = "0";
+        }
+
         renderTable(parsedData);
         renderCharacters(charactersData);
     });
@@ -274,6 +310,26 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 
+    gemsValue.addEventListener("input", (e) => {
+        const gemsKey = `${playerId}_gems`;
+        if (parsedData[gemsKey]) {
+            parsedData[gemsKey].value = e.target.textContent;
+        } else {
+            parsedData[gemsKey] = { type: 'integer', value: e.target.textContent };
+        }
+        changedKeys.add(gemsKey);
+    });
+
+    gemsValue.addEventListener("input", (e) => {
+        const gemsKey = `${playerId}_gems`;
+        if (parsedData[gemsKey]) {
+            parsedData[gemsKey].value = e.target.textContent;
+        } else {
+            parsedData[gemsKey] = { type: 'integer', value: e.target.textContent };
+        }
+        changedKeys.add(gemsKey);
+    });
+
     keySearchBar.addEventListener("input", (e) => {
         const searchTerm = e.target.value.toLowerCase();
         const filteredData = {};
@@ -293,6 +349,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         for (const [skinId, skinData] of newlyUnlocked.entries()) {
             const li = document.createElement("li");
+            li.addEventListener('click', () => toggleSkinById(skinId));
             const img = document.createElement("img");
             img.src = skinData.url;
             img.alt = skinData.name;
@@ -306,6 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         for (const [skinId, skinData] of newlyLocked.entries()) {
             const li = document.createElement("li");
+            li.addEventListener('click', () => toggleSkinById(skinId));
             const img = document.createElement("img");
             img.src = skinData.url;
             img.alt = skinData.name;
