@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const xmlOutput = document.getElementById("xml-output");
 
     let parsedData = {};
+    let changedKeys = new Set();
 
     if (window.location.search.includes("hail")) {
         hailContainer.style.display = "block";
@@ -121,6 +122,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const xmlText = xmlInput.value;
         if (!xmlText) return;
 
+        changedKeys.clear();
+
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlText, "application/xml");
         const dict = xmlDoc.querySelector("dict");
@@ -168,6 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
             valueCell.contentEditable = "true";
             valueCell.addEventListener("input", (e) => {
                 parsedData[key].value = e.target.textContent;
+                changedKeys.add(key);
             });
             const typeCell = document.createElement("td");
             typeCell.textContent = data[key].type;
@@ -183,20 +187,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     updateButton.addEventListener("click", () => {
-        let xmlString = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>`;
+        let updatedXml = xmlInput.value;
 
-        for (const key in parsedData) {
-            const { type, value } = parsedData[key];
-            xmlString += `<key>${key}</key><${type}>${value}</${type}>`;
+        for (const key of changedKeys) {
+            if (parsedData[key]) {
+                const { type, value } = parsedData[key];
+
+                const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+                const searchRegex = new RegExp(
+                    `(<key>${escapedKey}<\\/key>\\s*<${type}>)(.*?)(<\\/${type}>)`,
+                    "s"
+                );
+
+                const escapedValue = String(value)
+                    .replace(/&/g, "&")
+                    .replace(/</g, "<")
+                    .replace(/>/g, ">")
+                    .replace(/"/g, '"')
+                    .replace(/'/g, "'");
+
+                updatedXml = updatedXml.replace(searchRegex, `$1${escapedValue}$3`);
+            }
         }
-
-        xmlString += `</dict>
-</plist>`;
-
-        xmlOutput.value = xmlString;
+        xmlOutput.value = updatedXml;
+        changedKeys.clear();
     });
 
     keySearchBar.addEventListener("input", (e) => {
