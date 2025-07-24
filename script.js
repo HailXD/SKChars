@@ -139,6 +139,25 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function filterAndRenderCharacters() {
+        const term = searchBar.value.toLowerCase();
+        if (!term) {
+            renderCharacters(charactersData);
+            return;
+        }
+        const filtered = {};
+        for (const name in charactersData) {
+            const c = charactersData[name];
+            if (
+                name.toLowerCase().includes(term) ||
+                c.skins.some((s) => s.name.toLowerCase().includes(term))
+            ) {
+                filtered[name] = c;
+            }
+        }
+        renderCharacters(filtered);
+    }
+
     function findSkinData(skinId) {
         const match = skinId.match(/_c(\d+)_skin(\d+)/);
         if (!match) return null;
@@ -193,7 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         changedKeys.add(fullSkinId);
-        renderCharacters(charactersData);
+        filterAndRenderCharacters();
         renderChanges();
     }
 
@@ -236,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         changedKeys.add(fullSkillKey);
-        renderCharacters(charactersData);
+        filterAndRenderCharacters();
         renderChanges();
     }
 
@@ -278,23 +297,11 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         changedKeys.add(fullCharId);
-        renderCharacters(charactersData);
+        filterAndRenderCharacters();
         renderChanges();
     }
 
-    searchBar.addEventListener("input", (e) => {
-        const term = e.target.value.toLowerCase();
-        const filtered = {};
-        for (const name in charactersData) {
-            const c = charactersData[name];
-            if (
-                name.toLowerCase().includes(term) ||
-                c.skins.some((s) => s.name.toLowerCase().includes(term))
-            )
-                filtered[name] = c;
-        }
-        renderCharacters(filtered);
-    });
+    searchBar.addEventListener("input", filterAndRenderCharacters);
 
     processButton.addEventListener("click", () => {
         const xmlText = xmlInput.value;
