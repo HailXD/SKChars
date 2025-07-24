@@ -199,7 +199,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function toggleSkill(characterName, skillNumber) {
         if (!playerId) {
-            alert("Player ID not found. Please process an XML file first.");
             return;
         }
 
