@@ -3,7 +3,7 @@ import pandas as pd
 
 # website = requests.get('https://soul-knight.fandom.com/wiki/Characters').text
 # with open('characters.html', 'w', encoding='utf-8') as f:
-    # f.write(website)
+#     f.write(website)
 
 # tables = pd.read_html(website, extract_links="body")
 tables = pd.read_html("characters.html", extract_links="body")
@@ -12,9 +12,6 @@ characters = None
 skins = []
 
 for i, table in enumerate(tables):
-    if skills is None and 'skill' in [c.lower() for c in table.columns.tolist()]:
-        skills = table.copy()
-        continue
     if 'sort by cost' in [c[1].lower() for c in table.columns]:
         skins.append(table)
         continue
@@ -61,39 +58,6 @@ for ci, c in enumerate(skins):
             "price": price,
             "index": si
         })
-
-relevant = skills[['Character', 'Name & Description', 'Price']]
-d = relevant.to_dict(orient='records')
-for i, row in enumerate(d):
-    char = row['Character'][0]
-    skill = row['Name & Description'][0]
-    price = row['Price'][0]
-    
-    words = skill.split(' ')
-    pruned = False
-    for j, word in enumerate(words):
-        capital = 0
-        for k, chard in enumerate(word):
-            if chard.isupper():
-                capital += 1
-            if capital > 1:
-                pruned = True
-                words[j] = word[:k]
-                break
-        if pruned:
-            skill = ' '.join(words[:j + 1])
-            break
-
-    if char not in results:
-        print(char)
-        continue
-
-    results[char]['skills'] = []
-
-    results[char]['skills'].append({
-        "name": skill,
-        "price": price,
-    })
 
 with open('characters.json', 'w', encoding='utf-8') as f:
     import json
